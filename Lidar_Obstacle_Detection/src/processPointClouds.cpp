@@ -1,5 +1,6 @@
 // PCL lib Functions for processing point clouds 
 
+#include <unordered_set>
 #include "processPointClouds.h"
 
 
@@ -68,17 +69,83 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     auto startTime = std::chrono::steady_clock::now();
 
     // TODO:: Fill in this function to find inliers for the cloud.
-    pcl::SACSegmentation<PointT> seg;
     pcl::PointIndices::Ptr inliers {new pcl::PointIndices};
-    pcl::ModelCoefficients::Ptr coefficients {new pcl::ModelCoefficients};
 
-    seg.setOptimizeCoefficients(true);
-    seg.setModelType(pcl::SACMODEL_PLANE);
-    seg.setMethodType(pcl::SAC_RANSAC);
-    seg.setMaxIterations(maxIterations);
-    seg.setDistanceThreshold(distanceThreshold);
-    seg.setInputCloud(cloud);
-    seg.segment(*inliers, *coefficients);
+    // PCL RANSAC (took 17 ms on the example data set)
+    //pcl::SACSegmentation<PointT> seg;
+    //pcl::ModelCoefficients::Ptr coefficients {new pcl::ModelCoefficients};
+
+    //seg.setOptimizeCoefficients(true);
+    //seg.setModelType(pcl::SACMODEL_PLANE);
+    //seg.setMethodType(pcl::SAC_RANSAC);
+    //seg.setMaxIterations(maxIterations);
+    //seg.setDistanceThreshold(distanceThreshold);
+    //seg.setInputCloud(cloud);
+    //seg.segment(*inliers, *coefficients);
+
+    // My RANSAC implementation (took 42 ms on the example data set)
+    while (maxIterations--)
+    {
+        std::unordered_set<int> inliersTemp; // Set so no duplicate values
+
+        while (inliersTemp.size() < 3)
+        {
+            inliersTemp.insert(rand() % (cloud->points.size()));
+        }
+
+        float x1, y1, z1;
+        float x2, y2, z2;
+        float x3, y3, z3;
+
+        auto iterator = inliersTemp.begin();
+        x1 = cloud->points[*iterator].x;
+        y1 = cloud->points[*iterator].y;
+        z1 = cloud->points[*iterator].z;
+
+        iterator++;
+        x2 = cloud->points[*iterator].x;
+        y2 = cloud->points[*iterator].y;
+        z2 = cloud->points[*iterator].z;
+
+        iterator++;
+        x3 = cloud->points[*iterator].x;
+        y3 = cloud->points[*iterator].y;
+        z3 = cloud->points[*iterator].z;
+
+        float A = ((y2 - y1) * (z3 - z1)) - ((z2 - z1) * (y3 - y1));
+        float B = ((z2 - z1) * (x3 - x1)) - ((x2 - x1) * (z3 - z1));
+        float C = ((x2 - x1) * (y3 - y1)) - ((y2 - y1) * (x3 - x1));
+        float D = -((A * x1) + (B * y1) + (C * z1));
+
+        for (int index = 0; index < cloud->points.size(); index++)
+        {
+            if (inliersTemp.count(index) > 0)
+            {
+                continue;
+            }
+
+            float x = cloud->points[index].x;
+            float y = cloud->points[index].y;
+            float z = cloud->points[index].z;
+
+            float d = fabs((A * x) + (B * y) + (C * z) + D) / sqrt((A * A) + (B * B) + (C * C));
+
+            if (d <= distanceThreshold)
+            {
+                inliersTemp.insert(index);
+            }
+        }
+
+        if (inliersTemp.size() > inliers->indices.size())
+        {
+            inliers->indices.clear();
+
+            for (const auto& elem : inliersTemp)
+            {
+                inliers->indices.push_back(elem);
+            }
+        }
+    }
 
     if (inliers->indices.size() == 0)
     {
