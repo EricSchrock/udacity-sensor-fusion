@@ -48,6 +48,52 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     // TODO:: Create lidar sensor 
     Lidar * lidar = new Lidar(cars, 0); // Instantiate on the heap
     pcl::PointCloud<pcl::PointXYZ>::Ptr inputCloud = lidar->scan();
+
+    // Test points for PCA bounding boxes
+    inputCloud->points.push_back(pcl::PointXYZ(0.00, -5.00, 1.0));
+    inputCloud->points.push_back(pcl::PointXYZ(0.00, -5.25, 1.0));
+    inputCloud->points.push_back(pcl::PointXYZ(0.25, -5.25, 1.1));
+    inputCloud->points.push_back(pcl::PointXYZ(0.25, -5.50, 1.1));
+    inputCloud->points.push_back(pcl::PointXYZ(0.50, -5.50, 1.2));
+    inputCloud->points.push_back(pcl::PointXYZ(0.50, -5.75, 1.2));
+    inputCloud->points.push_back(pcl::PointXYZ(0.75, -5.75, 1.3));
+    inputCloud->points.push_back(pcl::PointXYZ(0.75, -6.00, 1.3));
+    inputCloud->points.push_back(pcl::PointXYZ(1.00, -6.00, 1.4));
+    inputCloud->points.push_back(pcl::PointXYZ(1.00, -6.25, 1.4));
+
+    inputCloud->points.push_back(pcl::PointXYZ(0.00, -5.00, 0.5));
+    inputCloud->points.push_back(pcl::PointXYZ(0.00, -5.25, 0.5));
+    inputCloud->points.push_back(pcl::PointXYZ(0.25, -5.25, 0.6));
+    inputCloud->points.push_back(pcl::PointXYZ(0.25, -5.50, 0.6));
+    inputCloud->points.push_back(pcl::PointXYZ(0.50, -5.50, 0.7));
+    inputCloud->points.push_back(pcl::PointXYZ(0.50, -5.75, 0.7));
+    inputCloud->points.push_back(pcl::PointXYZ(0.75, -5.75, 0.8));
+    inputCloud->points.push_back(pcl::PointXYZ(0.75, -6.00, 0.8));
+    inputCloud->points.push_back(pcl::PointXYZ(1.00, -6.00, 0.9));
+    inputCloud->points.push_back(pcl::PointXYZ(1.00, -6.25, 0.9));
+
+    inputCloud->points.push_back(pcl::PointXYZ(-0.50, -5.50, 1.0));
+    inputCloud->points.push_back(pcl::PointXYZ(-0.50, -5.75, 1.0));
+    inputCloud->points.push_back(pcl::PointXYZ(-0.25, -5.75, 1.1));
+    inputCloud->points.push_back(pcl::PointXYZ(-0.25, -6.00, 1.1));
+    inputCloud->points.push_back(pcl::PointXYZ(-0.00, -6.00, 1.2));
+    inputCloud->points.push_back(pcl::PointXYZ(-0.00, -6.25, 1.2));
+    inputCloud->points.push_back(pcl::PointXYZ( 0.25, -6.25, 1.3));
+    inputCloud->points.push_back(pcl::PointXYZ( 0.25, -6.50, 1.3));
+    inputCloud->points.push_back(pcl::PointXYZ( 0.50, -6.50, 1.4));
+    inputCloud->points.push_back(pcl::PointXYZ( 0.50, -6.75, 1.4));
+
+    inputCloud->points.push_back(pcl::PointXYZ(-0.50, -5.50, 0.5));
+    inputCloud->points.push_back(pcl::PointXYZ(-0.50, -5.75, 0.5));
+    inputCloud->points.push_back(pcl::PointXYZ(-0.25, -5.75, 0.6));
+    inputCloud->points.push_back(pcl::PointXYZ(-0.25, -6.00, 0.6));
+    inputCloud->points.push_back(pcl::PointXYZ(-0.00, -6.00, 0.7));
+    inputCloud->points.push_back(pcl::PointXYZ(-0.00, -6.25, 0.7));
+    inputCloud->points.push_back(pcl::PointXYZ( 0.25, -6.25, 0.8));
+    inputCloud->points.push_back(pcl::PointXYZ( 0.25, -6.50, 0.8));
+    inputCloud->points.push_back(pcl::PointXYZ( 0.50, -6.50, 0.9));
+    inputCloud->points.push_back(pcl::PointXYZ( 0.50, -6.75, 0.9));
+
     //renderRays(viewer, lidar->position, inputCloud);
     //renderPointCloud(viewer, inputCloud, "lidar");
 
@@ -57,10 +103,10 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     renderPointCloud(viewer, segmentCloud.first, "obstCloud", Color(1, 0, 0));
     renderPointCloud(viewer, segmentCloud.second, "planeCloud", Color(0, 1, 0));
 
-    std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> cloudClusters = pointProcessor.Clustering(segmentCloud.first, 1.0, 3, 30);
+    std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> cloudClusters = pointProcessor.Clustering(segmentCloud.first, 1.0, 3, 250);
 
     int clusterId = 0;
-    std::vector<Color> colors = {Color(1, 0, 0), Color(0, 1, 0), Color(0, 0, 1)};
+    std::vector<Color> colors = {Color(1, 1, 0), Color(0, 1, 1), Color(1, 0, 1)};
 
     for (pcl::PointCloud<pcl::PointXYZ>::Ptr cluster : cloudClusters)
     {
@@ -68,7 +114,8 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
         pointProcessor.numPoints(cluster);
         renderPointCloud(viewer, cluster, "obstCloud"+std::to_string(clusterId), colors[clusterId % colors.size()]);
 
-        Box box = pointProcessor.BoundingBox(cluster);
+        //Box box = pointProcessor.BoundingBox(cluster);
+        BoxQ box = pointProcessor.BoundingBoxQ(cluster);
         renderBox(viewer, box, clusterId);
 
         clusterId++;

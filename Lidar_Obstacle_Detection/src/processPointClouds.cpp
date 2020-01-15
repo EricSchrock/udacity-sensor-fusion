@@ -228,6 +228,47 @@ Box ProcessPointClouds<PointT>::BoundingBox(typename pcl::PointCloud<PointT>::Pt
 
 
 template<typename PointT>
+BoxQ ProcessPointClouds<PointT>::BoundingBoxQ(typename pcl::PointCloud<PointT>::Ptr cluster)
+{
+    // Code based on http://codextechnicanum.blogspot.com/2015/04/find-minimum-oriented-bounding-box-of.html
+
+    // Compute principle directions
+    Eigen::Vector4f pcaCentroid;
+    pcl::compute3DCentroid(*cluster, pcaCentroid);
+
+    Eigen::Matrix3f covariance;
+    computeCovarianceMatrixNormalized(*cluster, pcaCentroid, covariance);
+
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(covariance, Eigen::ComputeEigenvectors);
+    Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors();
+    eigenVectorsPCA.col(2) = eigenVectorsPCA.col(0).cross(eigenVectorsPCA.col(1));
+
+    // Transform the cluster so the principle components correspond with the origin and axes
+    Eigen::Matrix4f projectionTransform(Eigen::Matrix4f::Identity());
+    projectionTransform.block<3, 3>(0, 0) = eigenVectorsPCA.transpose();
+    projectionTransform.block<3, 1>(0, 3) = -1.0f * (projectionTransform.block<3, 3>(0, 0) * pcaCentroid.head<3>());
+
+    typename pcl::PointCloud<PointT>::Ptr clusterProjected (new pcl::PointCloud<PointT>);
+    pcl::transformPointCloud(*cluster, *clusterProjected, projectionTransform);
+
+    PointT minPoint, maxPoint;
+    pcl::getMinMax3D(*clusterProjected, minPoint, maxPoint);
+
+    const Eigen::Vector3f meanDiagonal = 0.5f * (maxPoint.getVector3fMap() + minPoint.getVector3fMap());
+    const Eigen::Quaternionf bboxQuaternion(eigenVectorsPCA);
+
+    BoxQ boxq;
+    boxq.bboxQuaternion = bboxQuaternion;
+    boxq.bboxTransform = eigenVectorsPCA * meanDiagonal + pcaCentroid.head<3>();
+    boxq.cube_length = maxPoint.x - minPoint.x;
+    boxq.cube_width = maxPoint.y - minPoint.y;
+    boxq.cube_height = maxPoint.z - minPoint.z;
+
+    return boxq;
+}
+
+
+template<typename PointT>
 void ProcessPointClouds<PointT>::savePcd(typename pcl::PointCloud<PointT>::Ptr cloud, std::string file)
 {
     pcl::io::savePCDFileASCII (file, *cloud);
