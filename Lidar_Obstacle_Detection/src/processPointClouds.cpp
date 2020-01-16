@@ -2,6 +2,7 @@
 
 #include <unordered_set>
 #include "processPointClouds.h"
+#include <pcl/filters/project_inliers.h>
 
 
 //constructor:
@@ -230,14 +231,21 @@ Box ProcessPointClouds<PointT>::BoundingBox(typename pcl::PointCloud<PointT>::Pt
 template<typename PointT>
 BoxQ ProcessPointClouds<PointT>::BoundingBoxQ(typename pcl::PointCloud<PointT>::Ptr cluster)
 {
-    // Code based on http://codextechnicanum.blogspot.com/2015/04/find-minimum-oriented-bounding-box-of.html
+    // Project the cluster onto the XY plane
+    pcl::PointCloud<pcl::PointXYZ>::Ptr clusterXYProjection(new pcl::PointCloud<pcl::PointXYZ>);
 
+    for (pcl::PointXYZ point : cluster->points)
+    {
+        clusterXYProjection->points.push_back(pcl::PointXYZ(point.x, point.y, 0));
+    }
+
+    // Code based on http://codextechnicanum.blogspot.com/2015/04/find-minimum-oriented-bounding-box-of.html
     // Compute principle directions
     Eigen::Vector4f pcaCentroid;
-    pcl::compute3DCentroid(*cluster, pcaCentroid);
+    pcl::compute3DCentroid(*clusterXYProjection, pcaCentroid);
 
     Eigen::Matrix3f covariance;
-    computeCovarianceMatrixNormalized(*cluster, pcaCentroid, covariance);
+    computeCovarianceMatrixNormalized(*clusterXYProjection, pcaCentroid, covariance);
 
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(covariance, Eigen::ComputeEigenvectors);
     Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors();
@@ -248,7 +256,7 @@ BoxQ ProcessPointClouds<PointT>::BoundingBoxQ(typename pcl::PointCloud<PointT>::
     projectionTransform.block<3, 3>(0, 0) = eigenVectorsPCA.transpose();
     projectionTransform.block<3, 1>(0, 3) = -1.0f * (projectionTransform.block<3, 3>(0, 0) * pcaCentroid.head<3>());
 
-    typename pcl::PointCloud<PointT>::Ptr clusterProjected (new pcl::PointCloud<PointT>);
+    typename pcl::PointCloud<PointT>::Ptr clusterProjected(new pcl::PointCloud<PointT>);
     pcl::transformPointCloud(*cluster, *clusterProjected, projectionTransform);
 
     PointT minPoint, maxPoint;
