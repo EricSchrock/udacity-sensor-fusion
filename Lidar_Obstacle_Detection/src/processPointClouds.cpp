@@ -25,18 +25,55 @@ void ProcessPointClouds<PointT>::numPoints(typename pcl::PointCloud<PointT>::Ptr
 template<typename PointT>
 typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(typename pcl::PointCloud<PointT>::Ptr cloud, float filterRes, Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint)
 {
-
     // Time segmentation process
     auto startTime = std::chrono::steady_clock::now();
 
     // TODO:: Fill in the function to do voxel grid point reduction and region based filtering
 
+    // Reduce the point cloud's resolution by removing all but one point per voxel
+    pcl::VoxelGrid<PointT> vg;
+    typename pcl::PointCloud<PointT>::Ptr cloudFiltered(new pcl::PointCloud<PointT>);
+
+    vg.setInputCloud(cloud);
+    vg.setLeafSize(filterRes, filterRes, filterRes);
+    vg.filter(*cloudFiltered);
+
+    // Crop the point cloud to a boxed region within a certain distance around the host vehicle
+    pcl::CropBox<PointT> region(true);
+    typename pcl::PointCloud<PointT>::Ptr cloudRegion(new pcl::PointCloud<PointT>);
+
+    region.setMin(minPoint);
+    region.setMax(maxPoint);
+    region.setInputCloud(cloudFiltered);
+    region.filter(*cloudRegion);
+
+    // Remove reflections off the host vehicle
+    std::vector<int> indices;
+    pcl::CropBox<PointT> roof(true);
+
+    roof.setMin(Eigen::Vector4f(-1.5, -1.7, -1.0, 1.0));
+    roof.setMax(Eigen::Vector4f(2.6, 1.7, -0.4, 1.0));
+    roof.setInputCloud(cloudRegion);
+    roof.filter(indices);
+
+    pcl::PointIndices::Ptr inliers {new pcl::PointIndices};
+
+    for (int point : indices)
+    {
+        inliers->indices.push_back(point);
+    }
+
+    pcl::ExtractIndices<PointT> extract;
+    extract.setInputCloud(cloudRegion);
+    extract.setIndices(inliers);
+    extract.setNegative(true);
+    extract.filter(*cloudRegion);
+
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     std::cout << "filtering took " << elapsedTime.count() << " milliseconds" << std::endl;
 
-    return cloud;
-
+    return cloudRegion;
 }
 
 
@@ -232,11 +269,11 @@ template<typename PointT>
 BoxQ ProcessPointClouds<PointT>::BoundingBoxQ(typename pcl::PointCloud<PointT>::Ptr cluster)
 {
     // Project the cluster onto the XY plane
-    typename pcl::PointCloud<PointT>::Ptr clusterXYProjection(new pcl::PointCloud<PointT>);
+    typename pcl::PointCloud<pcl::PointXYZ>::Ptr clusterXYProjection(new pcl::PointCloud<pcl::PointXYZ>);
 
     for (PointT point : cluster->points)
     {
-        clusterXYProjection->points.push_back(PointT(point.x, point.y, 0));
+        clusterXYProjection->points.push_back(pcl::PointXYZ(point.x, point.y, 0));
     }
 
     // Code based on http://codextechnicanum.blogspot.com/2015/04/find-minimum-oriented-bounding-box-of.html
