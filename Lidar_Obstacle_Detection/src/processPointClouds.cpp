@@ -232,11 +232,11 @@ template<typename PointT>
 BoxQ ProcessPointClouds<PointT>::BoundingBoxQ(typename pcl::PointCloud<PointT>::Ptr cluster)
 {
     // Project the cluster onto the XY plane
-    pcl::PointCloud<pcl::PointXYZ>::Ptr clusterXYProjection(new pcl::PointCloud<pcl::PointXYZ>);
+    typename pcl::PointCloud<PointT>::Ptr clusterXYProjection(new pcl::PointCloud<PointT>);
 
-    for (pcl::PointXYZ point : cluster->points)
+    for (PointT point : cluster->points)
     {
-        clusterXYProjection->points.push_back(pcl::PointXYZ(point.x, point.y, 0));
+        clusterXYProjection->points.push_back(PointT(point.x, point.y, 0));
     }
 
     // Code based on http://codextechnicanum.blogspot.com/2015/04/find-minimum-oriented-bounding-box-of.html
