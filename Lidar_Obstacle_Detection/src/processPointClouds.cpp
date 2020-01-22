@@ -184,7 +184,7 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
 
 
 template<typename PointT>
-void ProcessPointClouds<PointT>::ClusteringHelper(int index, const std::vector<std::vector<float>> points, pcl::PointIndices& cluster, std::vector<bool>& processed, KdTree * tree, float distanceTol)
+void ProcessPointClouds<PointT>::ClusteringHelper(int index, const std::vector<std::array<float, 3>> points, pcl::PointIndices& cluster, std::vector<bool>& processed, KdTree * tree, float distanceTol)
 {
     processed[index] = true;
     cluster.indices.push_back(index);
@@ -209,11 +209,11 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
 
     // My Euclidean clustering and KD-Tree implementation (took 25 ms on the example data set compared to 8 ms for the built in PCL clustering and KD-Tree)
     KdTree * tree = new KdTree;
-    std::vector<std::vector<float>> points;
+    std::vector<std::array<float, 3>> points;
 
     for (int i = 0; i < cloud->points.size(); i++)
     {
-        std::vector<float> point = {cloud->points[i].x, cloud->points[i].y, cloud->points[i].z};
+        std::array<float, 3> point = {cloud->points[i].x, cloud->points[i].y, cloud->points[i].z};
         tree->insert(point, i);
         points.push_back(point);
     }

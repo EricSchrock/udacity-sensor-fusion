@@ -4,25 +4,25 @@
 // Structure to represent node of kd tree
 struct Node
 {
-	std::vector<float> point;
+	std::array<float, 3> point;
 	int id;
 	Node * left;
 	Node * right;
 
-	Node(std::vector<float> arr, int setId)
+	Node(std::array<float, 3> arr, int setId)
 	:	point(arr), id(setId), left(NULL), right(NULL)
 	{}
 };
 
 struct KdTree
 {
-	Node* root;
+	Node * root;
 
 	KdTree()
 	: root(NULL)
 	{}
 
-	void insertHelper(Node * &node, uint depth, std::vector<float> point, int id)
+	void insertHelper(Node * &node, uint depth, std::array<float, 3> point, int id)
 	{
 		if (node == NULL)
 		{
@@ -43,12 +43,12 @@ struct KdTree
 		}
 	}
 
-	void insert(std::vector<float> point, int id)
+	void insert(std::array<float, 3> point, int id)
 	{
 		insertHelper(root, 0, point, id);
 	}
 
-	void searchHelper(std::vector<float> target, Node * node, int depth, float distanceTol, std::vector<int>& ids)
+	void searchHelper(std::array<float, 3> target, Node * node, int depth, float distanceTol, std::vector<int>& ids)
 	{
 		if (node != NULL)
 		{
@@ -82,7 +82,7 @@ struct KdTree
 	}
 
 	// return a list of point ids in the tree that are within distance of target
-	std::vector<int> search(std::vector<float> target, float distanceTol)
+	std::vector<int> search(std::array<float, 3> target, float distanceTol)
 	{
 		std::vector<int> ids;
 
