@@ -33,7 +33,7 @@ struct KdTree
 		}
 		else
 		{
-			uint dim = depth % 2; // 2D (change to 3 for 3D)
+			uint dim = depth % 3; // 3D
 
 			if (point[dim] < node->point[dim])
 			{
@@ -48,8 +48,6 @@ struct KdTree
 
 	void insert(std::vector<float> point, int id)
 	{
-		// TODO: Fill in this function to insert a new point into the tree
-		// the function should create a new node and place correctly with in the root 
 		insertHelper(root, 0, point, id);
 	}
 
@@ -57,14 +55,16 @@ struct KdTree
 	{
 		if (node != NULL)
 		{
-			// Point is within the targets match tolerance box (2D)
+			// Point is within the targets match tolerance box (3D)
 			if ((node->point[0] >= (target[0] - distanceTol)) &&
 			    (node->point[0] <= (target[0] + distanceTol)) &&
 				(node->point[1] >= (target[1] - distanceTol)) &&
-				(node->point[1] <= (target[1] + distanceTol)))
+				(node->point[1] <= (target[1] + distanceTol)) &&
+				(node->point[2] >= (target[2] - distanceTol)) &&
+				(node->point[2] <= (target[2] + distanceTol)))
 			{
-				// 2D distance calculation
-				float distance = sqrt(pow(node->point[0] - target[0], 2) + pow(node->point[1] - target[1], 2));
+				// 3D distance calculation
+				float distance = sqrt(pow(node->point[0] - target[0], 2) + pow(node->point[1] - target[1], 2) + pow(node->point[2] - target[2], 2));
 
 				if (distance <= distanceTol)
 				{
@@ -72,12 +72,12 @@ struct KdTree
 				}
 			}
 
-			if ((target[depth % 2] - distanceTol) < node->point[depth % 2]) // 2D (change to % 3 for 3D)
+			if ((target[depth % 3] - distanceTol) < node->point[depth % 3]) // 3D
 			{
 				searchHelper(target, node->left, depth + 1, distanceTol, ids);
 			}
 
-			if ((target[depth % 2] + distanceTol) > node->point[depth % 2]) // 2D (change to % 3 for 3D)
+			if ((target[depth % 3] + distanceTol) > node->point[depth % 3]) // 3D
 			{
 				searchHelper(target, node->right, depth + 1, distanceTol, ids);
 			}
