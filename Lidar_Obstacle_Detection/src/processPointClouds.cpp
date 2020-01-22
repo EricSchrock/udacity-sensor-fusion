@@ -105,34 +105,27 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
 
     pcl::PointIndices::Ptr inliers {new pcl::PointIndices};
 
-    // My RANSAC implementation (took 42 ms on the example data set compared to 17 ms for the built in PCL RANSAC function)
+    // My RANSAC implementation
     while (maxIterations--)
     {
-        std::unordered_set<int> inliersTemp; // Set so no duplicate values
+        pcl::PointIndices::Ptr inliersTemp {new pcl::PointIndices};
 
-        while (inliersTemp.size() < 3)
+        while (inliersTemp->indices.size() < 3)
         {
-            inliersTemp.insert(rand() % (cloud->points.size()));
+            inliersTemp->indices.push_back(rand() % (cloud->points.size()));
         }
 
-        float x1, y1, z1;
-        float x2, y2, z2;
-        float x3, y3, z3;
+        float x1 = cloud->points[inliersTemp->indices[0]].x;
+        float y1 = cloud->points[inliersTemp->indices[0]].y;
+        float z1 = cloud->points[inliersTemp->indices[0]].z;
 
-        auto iterator = inliersTemp.begin();
-        x1 = cloud->points[*iterator].x;
-        y1 = cloud->points[*iterator].y;
-        z1 = cloud->points[*iterator].z;
+        float x2 = cloud->points[inliersTemp->indices[1]].x;
+        float y2 = cloud->points[inliersTemp->indices[1]].y;
+        float z2 = cloud->points[inliersTemp->indices[1]].z;
 
-        iterator++;
-        x2 = cloud->points[*iterator].x;
-        y2 = cloud->points[*iterator].y;
-        z2 = cloud->points[*iterator].z;
-
-        iterator++;
-        x3 = cloud->points[*iterator].x;
-        y3 = cloud->points[*iterator].y;
-        z3 = cloud->points[*iterator].z;
+        float x3 = cloud->points[inliersTemp->indices[2]].x;
+        float y3 = cloud->points[inliersTemp->indices[2]].y;
+        float z3 = cloud->points[inliersTemp->indices[2]].z;
 
         float A = ((y2 - y1) * (z3 - z1)) - ((z2 - z1) * (y3 - y1));
         float B = ((z2 - z1) * (x3 - x1)) - ((x2 - x1) * (z3 - z1));
@@ -141,11 +134,6 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
 
         for (int index = 0; index < cloud->points.size(); index++)
         {
-            if (inliersTemp.count(index) > 0)
-            {
-                continue;
-            }
-
             float x = cloud->points[index].x;
             float y = cloud->points[index].y;
             float z = cloud->points[index].z;
@@ -154,18 +142,13 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
 
             if (d <= distanceThreshold)
             {
-                inliersTemp.insert(index);
+                inliersTemp->indices.push_back(index);
             }
         }
 
-        if (inliersTemp.size() > inliers->indices.size())
+        if (inliersTemp->indices.size() > inliers->indices.size())
         {
-            inliers->indices.clear();
-
-            for (const auto& elem : inliersTemp)
-            {
-                inliers->indices.push_back(elem);
-            }
+            inliers = inliersTemp;
         }
     }
 
@@ -207,7 +190,7 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
     // Time clustering process
     auto startTime = std::chrono::steady_clock::now();
 
-    // My Euclidean clustering and KD-Tree implementation (took 25 ms on the example data set compared to 8 ms for the built in PCL clustering and KD-Tree)
+    // My Euclidean clustering and KD-Tree implementation
     KdTree * tree = new KdTree;
     std::vector<std::array<float, 3>> points;
 
