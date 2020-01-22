@@ -105,7 +105,7 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
 
     pcl::PointIndices::Ptr inliers {new pcl::PointIndices};
 
-    // My RANSAC implementation (took 42 ms on the example data set compared to 17 ms for the built inPCL RANSAC function)
+    // My RANSAC implementation (took 42 ms on the example data set compared to 17 ms for the built in PCL RANSAC function)
     while (maxIterations--)
     {
         std::unordered_set<int> inliersTemp; // Set so no duplicate values
@@ -184,24 +184,59 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
 
 
 template<typename PointT>
+void ProcessPointClouds<PointT>::ClusteringHelper(int index, const std::vector<std::vector<float>> points, pcl::PointIndices& cluster, std::vector<bool>& processed, KdTree * tree, float distanceTol)
+{
+    processed[index] = true;
+    cluster.indices.push_back(index);
+
+    std::vector<int> nearest = tree->search(points[index], distanceTol);
+
+    for (int id : nearest)
+    {
+        if (not processed[id])
+        {
+            ClusteringHelper(id, points, cluster, processed, tree, distanceTol);
+        }
+    }
+}
+
+
+template<typename PointT>
 std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::Clustering(typename pcl::PointCloud<PointT>::Ptr cloud, float clusterTolerance, int minSize, int maxSize)
 {
     // Time clustering process
     auto startTime = std::chrono::steady_clock::now();
 
-    std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;
+    // My Euclidean clustering and KD-Tree implementation (took 25 ms on the example data set compared to 8 ms for the built in PCL clustering and KD-Tree)
+    KdTree * tree = new KdTree;
+    std::vector<std::vector<float>> points;
 
-    typename pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>);
-    tree->setInputCloud(cloud);
+    for (int i = 0; i < cloud->points.size(); i++)
+    {
+        std::vector<float> point = {cloud->points[i].x, cloud->points[i].y, cloud->points[i].z};
+        tree->insert(point, i);
+        points.push_back(point);
+    }
 
     std::vector<pcl::PointIndices> clusterIndices;
-    pcl::EuclideanClusterExtraction<PointT> ec;
-    ec.setClusterTolerance(clusterTolerance);
-    ec.setMinClusterSize(minSize);
-    ec.setMaxClusterSize(maxSize);
-    ec.setSearchMethod(tree);
-    ec.setInputCloud(cloud);
-    ec.extract(clusterIndices);
+    std::vector<bool> processed(points.size(), false);
+
+    for (int i = 0; i < points.size(); i++)
+    {
+        if (not processed[i])
+        {
+            pcl::PointIndices cluster;
+
+            ClusteringHelper(i, points, cluster, processed, tree, clusterTolerance);
+
+            if ((cluster.indices.size() >= minSize) && (cluster.indices.size() <= maxSize))
+            {
+                clusterIndices.push_back(cluster);
+            }
+        }
+    }
+
+    std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;
 
     for (pcl::PointIndices getIndices : clusterIndices)
     {
