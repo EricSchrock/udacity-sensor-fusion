@@ -161,18 +161,18 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     std::cout << "plane segmentation took " << elapsedTime.count() << " milliseconds" << std::endl;
 
-    std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> segResult = SeparateClouds(inliers,cloud);
+    std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> segResult = SeparateClouds(inliers, cloud);
     return segResult;
 }
 
 
 template<typename PointT>
-void ProcessPointClouds<PointT>::ClusteringHelper(int index, const std::vector<std::array<float, 3>> points, pcl::PointIndices& cluster, std::vector<bool>& processed, KdTree * tree, float distanceTol)
+void ProcessPointClouds<PointT>::ClusteringHelper(int index, const std::vector<std::array<float, 3>> points, pcl::PointIndices& cluster, std::vector<bool>& processed, KdTree& tree, float distanceTol)
 {
     processed[index] = true;
     cluster.indices.push_back(index);
 
-    std::vector<int> nearest = tree->search(points[index], distanceTol);
+    std::vector<int> nearest = tree.search(points[index], distanceTol);
 
     for (int id : nearest)
     {
@@ -191,13 +191,13 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
     auto startTime = std::chrono::steady_clock::now();
 
     // My Euclidean clustering and KD-Tree implementation
-    KdTree * tree = new KdTree;
+    KdTree tree = KdTree();
     std::vector<std::array<float, 3>> points;
 
     for (int i = 0; i < cloud->points.size(); i++)
     {
         std::array<float, 3> point = {cloud->points[i].x, cloud->points[i].y, cloud->points[i].z};
-        tree->insert(point, i);
+        tree.insert(point, i);
         points.push_back(point);
     }
 
