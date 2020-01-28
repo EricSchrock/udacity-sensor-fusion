@@ -5,7 +5,9 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 
+
 using namespace std;
+
 
 void loadImage3()
 {
@@ -29,8 +31,10 @@ void loadImage3()
     cv::namedWindow(windowName, 1); // create window
     for (auto it = imgList.begin(); it != imgList.end(); ++it)
     {
-
-        // STUDENT TASK : Prevent image 7 from being displayed
+        if (it == imgList.begin() + 2)
+        {
+            continue;
+        }
 
         // display image
         cv::imshow(windowName, *it);
