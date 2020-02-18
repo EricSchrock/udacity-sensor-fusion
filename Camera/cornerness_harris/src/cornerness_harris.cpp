@@ -38,6 +38,57 @@ void cornernessHarris()
     // each maximum. The resulting coordinates shall be stored in a list of keypoints 
     // of the type `vector<cv::KeyPoint>`.
 
+    // Look for prominent corners and instantiate keypoints
+    vector<cv::KeyPoint> keypoints;
+    double maxOverlap = 0.0; // max. permissible overlap between two features in %, used during non-maxima suppression
+
+    for (size_t j = 0; j < dst_norm.rows; j++)
+    {
+        for (size_t i = 0; i < dst_norm.cols; i++)
+        {
+            int response = (int)dst_norm.at<float>(j, i);
+
+            if (response > minResponse) // only store points above a threshold
+            {
+                cv::KeyPoint newKeyPoint;
+                newKeyPoint.pt = cv::Point2f(i, j);
+                newKeyPoint.size = 2 * apertureSize;
+                newKeyPoint.response = response;
+
+                // perform non-maximum suppression (NMS) in local neighbourhood around new key point
+                bool bOverlap = false;
+
+                for (auto it = keypoints.begin(); it != keypoints.end(); ++it)
+                {
+                    double kptOverlap = cv::KeyPoint::overlap(newKeyPoint, *it);
+
+                    if (kptOverlap > maxOverlap)
+                    {
+                        bOverlap = true;
+
+                        if (newKeyPoint.response > (*it).response)
+                        {                      // if overlap is >t AND response is higher for new kpt
+                            *it = newKeyPoint; // replace old key point with new one
+                            break;             // quit loop over keypoints
+                        }
+                    }
+                }
+
+                if (!bOverlap)
+                {                                     // only add new key point if no overlap has been found in previous NMS
+                    keypoints.push_back(newKeyPoint); // store new keypoint in dynamic list
+                }
+            }
+        }
+    }
+
+    // visualize keypoints
+    windowName = "Harris Corner Detection Results";
+    cv::namedWindow(windowName, 5);
+    cv::Mat visImage = dst_norm_scaled.clone();
+    cv::drawKeypoints(dst_norm_scaled, keypoints, visImage, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    cv::imshow(windowName, visImage);
+    cv::waitKey(0);
 }
 
 int main()
