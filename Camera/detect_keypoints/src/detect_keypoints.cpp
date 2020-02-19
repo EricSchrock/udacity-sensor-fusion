@@ -28,7 +28,7 @@ void detKeypoints1()
     double t = (double)cv::getTickCount();
     cv::goodFeaturesToTrack(imgGray, corners, maxCorners, qualityLevel, minDistance, cv::Mat(), blockSize, useHarris, k);
     t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
-    cout << "Shi-Tomasi with n= " << corners.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
+    cout << "Shi-Tomasi with n = " << corners.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
 
     for (auto it = corners.begin(); it != corners.end(); ++it)
     { // add corners to result vector
@@ -51,6 +51,23 @@ void detKeypoints1()
     // detector and compare both algorithms with regard to 
     // (a) number of keypoints, (b) distribution of 
     // keypoints over the image and (c) processing speed.
+    int threshold = 30;                                                              // difference between intensity of the central pixel and pixels of a circle around this pixel
+    bool bNMS = true;                                                                // perform non-maxima suppression on keypoints
+    cv::FastFeatureDetector::DetectorType type = cv::FastFeatureDetector::TYPE_9_16; // TYPE_9_16, TYPE_7_12, TYPE_5_8
+    cv::Ptr<cv::FeatureDetector> detector = cv::FastFeatureDetector::create(threshold, bNMS, type);
+
+    vector<cv::KeyPoint> kptsFAST;
+    t = (double)cv::getTickCount();
+    detector->detect(imgGray, kptsFAST);
+    t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+    cout << "FAST with n = " << kptsFAST.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
+
+    visImage = img.clone();
+    cv::drawKeypoints(img, kptsFAST, visImage, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    windowName = "FAST Results";
+    cv::namedWindow(windowName, 2);
+    imshow(windowName, visImage);
+    cv::waitKey(0);
 }
 
 int main()
