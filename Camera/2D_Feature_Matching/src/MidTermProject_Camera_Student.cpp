@@ -21,7 +21,6 @@ using namespace std;
 /* MAIN PROGRAM */
 int main(int argc, const char *argv[])
 {
-
     /* INIT VARIABLES AND DATA STRUCTURES */
 
     // data location
@@ -87,26 +86,29 @@ int main(int argc, const char *argv[])
             detKeypointsModern(keypoints, imgGray, detectorType, bVis);
         }
 
-        //// STUDENT ASSIGNMENT
-        //// TASK MP.3 -> only keep keypoints on the preceding vehicle
-
         // only keep keypoints on the preceding vehicle
-        bool bFocusOnVehicle = true;
+        bool bFocusOnVehicle = false;
         cv::Rect vehicleRect(535, 180, 180, 150);
+
         if (bFocusOnVehicle)
         {
-            // ...
+            for (auto it = keypoints.begin(); it != keypoints.end(); ++it)
+            {
+                if (!vehicleRect.contains((*it).pt))
+                {
+                    keypoints.erase(it--);
+                }
+            }
         }
-
-        //// EOF STUDENT ASSIGNMENT
 
         // optional : limit number of keypoints (helpful for debugging and learning)
         bool bLimitKpts = false;
+
         if (bLimitKpts)
         {
             int maxKeypoints = 50;
 
-            if (detectorType.compare("SHITOMASI") == 0)
+            if ((detectorType.compare("SHITOMASI") == 0) || (detectorType.compare("HARRIS") == 0))
             { // there is no response info, so keep the first 50 as they are sorted in descending quality order
                 keypoints.erase(keypoints.begin() + maxKeypoints, keypoints.end());
             }
