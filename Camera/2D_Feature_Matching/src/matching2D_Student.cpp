@@ -129,11 +129,12 @@ void detKeypointsModern(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, std:
     }
     else if (detectorType.compare("ORB") == 0)
     {
-
+        int maxFeatures = 10000;
+        detector = cv::ORB::create(maxFeatures);
     }
     else if (detectorType.compare("AKAZE") == 0)
     {
-
+        detector = cv::AKAZE::create();
     }
     else if (detectorType.compare("SIFT") == 0)
     {
