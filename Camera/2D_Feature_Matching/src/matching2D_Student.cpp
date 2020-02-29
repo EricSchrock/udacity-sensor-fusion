@@ -62,7 +62,7 @@ void descKeypoints(vector<cv::KeyPoint> &keypoints, cv::Mat &img, cv::Mat &descr
 }
 
 // Detect keypoints in image using the traditional Shi-Thomasi detector
-void detKeypointsShiTomasi(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool bVis)
+void detKeypointsOld(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool useHarris, bool bVis)
 {
     // compute detector parameters based on image size
     int blockSize = 4;       //  size of an average block for computing a derivative covariation matrix over each pixel neighborhood
@@ -76,28 +76,43 @@ void detKeypointsShiTomasi(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool b
     // Apply corner detection
     double t = (double)cv::getTickCount();
     vector<cv::Point2f> corners;
-    cv::goodFeaturesToTrack(img, corners, maxCorners, qualityLevel, minDistance, cv::Mat(), blockSize, false, k);
+    cv::goodFeaturesToTrack(img, corners, maxCorners, qualityLevel, minDistance, cv::Mat(), blockSize, useHarris, k);
 
     // add corners to result vector
     for (auto it = corners.begin(); it != corners.end(); ++it)
     {
-
         cv::KeyPoint newKeyPoint;
         newKeyPoint.pt = cv::Point2f((*it).x, (*it).y);
         newKeyPoint.size = blockSize;
         keypoints.push_back(newKeyPoint);
     }
+
     t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
-    cout << "Shi-Tomasi detection with n=" << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
+    cout << ((useHarris) ? ("Harris") : ("Shi-Tomasi")) << " detection with n=" << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
 
     // visualize results
     if (bVis)
     {
         cv::Mat visImage = img.clone();
         cv::drawKeypoints(img, keypoints, visImage, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-        string windowName = "Shi-Tomasi Corner Detector Results";
+        string windowName = (useHarris) ? ("Harris Corner Detector Results") : ("Shi-Tomasi Corner Detector Results");
         cv::namedWindow(windowName, 6);
         imshow(windowName, visImage);
         cv::waitKey(0);
     }
+}
+
+void detKeypointsShiTomasi(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool bVis)
+{
+    detKeypointsOld(keypoints, img, false, bVis);
+}
+
+void detKeypointsHarris(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool bVis)
+{
+    detKeypointsOld(keypoints, img, true, bVis);
+}
+
+void detKeypointsModern(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, std::string detectorType, bool bVis)
+{
+
 }
