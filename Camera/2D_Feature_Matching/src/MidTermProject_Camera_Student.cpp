@@ -71,7 +71,7 @@ int main(int argc, const char *argv[])
 
         // extract 2D keypoints from current image
         vector<cv::KeyPoint> keypoints; // create empty feature list for current image
-        string detectorType = "BRISK";
+        string detectorType = "AKAZE";
 
         if (detectorType.compare("SHITOMASI") == 0)
         {
@@ -123,7 +123,13 @@ int main(int argc, const char *argv[])
         /* EXTRACT KEYPOINT DESCRIPTORS */
 
         cv::Mat descriptors;
-        string descriptorType = "SIFT";
+        string descriptorType = "AKAZE";
+
+        if ((descriptorType.compare("AKAZE") == 0) && (detectorType.compare("AKAZE") != 0))
+        {
+            cout << "AKAZE descriptors can only be used with AKAZE keypoints" << endl;
+        }
+
         descKeypoints((dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->cameraImg, descriptors, descriptorType);
 
         // push descriptors for current frame to end of data buffer
