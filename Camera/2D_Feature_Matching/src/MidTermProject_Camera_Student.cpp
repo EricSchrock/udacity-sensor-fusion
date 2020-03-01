@@ -23,6 +23,11 @@ int main(int argc, const char *argv[])
 {
     /* INIT VARIABLES AND DATA STRUCTURES */
 
+    string detectorType = "AKAZE";
+    string descriptorType = "AKAZE";
+    string matcherType = "MAT_FLANN";
+    string selectorType = "SEL_KNN";
+
     // data location
     string dataPath = "../";
 
@@ -71,7 +76,6 @@ int main(int argc, const char *argv[])
 
         // extract 2D keypoints from current image
         vector<cv::KeyPoint> keypoints; // create empty feature list for current image
-        string detectorType = "AKAZE";
 
         if (detectorType.compare("SHITOMASI") == 0)
         {
@@ -112,6 +116,7 @@ int main(int argc, const char *argv[])
             { // there is no response info, so keep the first 50 as they are sorted in descending quality order
                 keypoints.erase(keypoints.begin() + maxKeypoints, keypoints.end());
             }
+
             cv::KeyPointsFilter::retainBest(keypoints, maxKeypoints);
             cout << " NOTE: Keypoints have been limited!" << endl;
         }
@@ -123,7 +128,6 @@ int main(int argc, const char *argv[])
         /* EXTRACT KEYPOINT DESCRIPTORS */
 
         cv::Mat descriptors;
-        string descriptorType = "AKAZE";
 
         if ((descriptorType.compare("AKAZE") == 0) && (detectorType.compare("AKAZE") != 0))
         {
@@ -142,27 +146,10 @@ int main(int argc, const char *argv[])
             /* MATCH KEYPOINT DESCRIPTORS */
 
             vector<cv::DMatch> matches;
-            string matcherType = "MAT_BF";        // MAT_BF, MAT_FLANN
-            string selectorType = "SEL_NN";       // SEL_NN, SEL_KNN
-
-            if (descriptorType.compare("SIFT") == 0)
-            {
-                descriptorType = "DES_HOG";
-            }
-            else
-            {
-                descriptorType = "DES_BINARY";
-            }
-
-            //// STUDENT ASSIGNMENT
-            //// TASK MP.5 -> add FLANN matching in file matching2D.cpp
-            //// TASK MP.6 -> add KNN match selection and perform descriptor distance ratio filtering with t=0.8 in file matching2D.cpp
 
             matchDescriptors((dataBuffer.end() - 2)->keypoints, (dataBuffer.end() - 1)->keypoints,
                              (dataBuffer.end() - 2)->descriptors, (dataBuffer.end() - 1)->descriptors,
                              matches, descriptorType, matcherType, selectorType);
-
-            //// EOF STUDENT ASSIGNMENT
 
             // store matches in current data frame
             (dataBuffer.end() - 1)->kptMatches = matches;
