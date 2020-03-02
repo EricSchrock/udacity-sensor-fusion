@@ -54,6 +54,8 @@ void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::Key
             }
         }
     }
+
+    cout << matcherType << " (" << selectorType << ") with n=" << matches.size() << " matches" << endl;
 }
 
 // Use one of several types of state-of-art descriptors to uniquely identify keypoints
@@ -129,6 +131,21 @@ void detKeypointsOld(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool useHarr
         keypoints.push_back(newKeyPoint);
     }
 
+    // only keep keypoints on the preceding vehicle
+    bool bFocusOnVehicle = false;
+    cv::Rect vehicleRect(550, 190, 155, 135);
+
+    if (bFocusOnVehicle)
+    {
+        for (auto it = keypoints.begin(); it != keypoints.end(); ++it)
+        {
+            if (!vehicleRect.contains((*it).pt))
+            {
+                keypoints.erase(it--);
+            }
+        }
+    }
+
     t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
     cout << ((useHarris) ? ("Harris") : ("Shi-Tomasi")) << " detection with n=" << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
 
@@ -191,6 +208,22 @@ void detKeypointsModern(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, std:
     double t = (double)cv::getTickCount();
     detector->detect(img, keypoints);
     t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+
+    // only keep keypoints on the preceding vehicle
+    bool bFocusOnVehicle = false;
+    cv::Rect vehicleRect(550, 190, 155, 135);
+
+    if (bFocusOnVehicle)
+    {
+        for (auto it = keypoints.begin(); it != keypoints.end(); ++it)
+        {
+            if (!vehicleRect.contains((*it).pt))
+            {
+                keypoints.erase(it--);
+            }
+        }
+    }
+
     cout << detectorType << " detection with n=" << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
 
     if (bVis)

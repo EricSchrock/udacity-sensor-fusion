@@ -23,9 +23,9 @@ int main(int argc, const char *argv[])
 {
     /* INIT VARIABLES AND DATA STRUCTURES */
 
-    string detectorType = "AKAZE";
-    string descriptorType = "AKAZE";
-    string matcherType = "MAT_FLANN";
+    string detectorType = "SIFT";
+    string descriptorType = "SIFT";
+    string matcherType = "MAT_BF";
     string selectorType = "SEL_KNN";
 
     // data location
@@ -69,8 +69,6 @@ int main(int argc, const char *argv[])
         DataFrame frame;
         frame.cameraImg = imgGray;
         dataBuffer.push_back(frame);
-
-        cout << "#1 : LOAD IMAGE INTO BUFFER done" << endl;
 
         /* DETECT IMAGE KEYPOINTS */
 
@@ -123,7 +121,6 @@ int main(int argc, const char *argv[])
 
         // push keypoints and descriptor for current frame to end of data buffer
         (dataBuffer.end() - 1)->keypoints = keypoints;
-        cout << "#2 : DETECT KEYPOINTS done" << endl;
 
         /* EXTRACT KEYPOINT DESCRIPTORS */
 
@@ -139,8 +136,6 @@ int main(int argc, const char *argv[])
         // push descriptors for current frame to end of data buffer
         (dataBuffer.end() - 1)->descriptors = descriptors;
 
-        cout << "#3 : EXTRACT DESCRIPTORS done" << endl;
-
         if (dataBuffer.size() > 1) // wait until at least two images have been processed
         {
             /* MATCH KEYPOINT DESCRIPTORS */
@@ -154,11 +149,7 @@ int main(int argc, const char *argv[])
             // store matches in current data frame
             (dataBuffer.end() - 1)->kptMatches = matches;
 
-            cout << "#4 : MATCH KEYPOINT DESCRIPTORS done" << endl;
-
             // visualize matches between current and previous image
-            bVis = true;
-
             if (bVis)
             {
                 cv::Mat matchImg = ((dataBuffer.end() - 1)->cameraImg).clone();
@@ -174,9 +165,9 @@ int main(int argc, const char *argv[])
                 cout << "Press key to continue to next image" << endl;
                 cv::waitKey(0); // wait for key to be pressed
             }
-
-            bVis = false;
         }
+
+        cout << endl;
     } // eof loop over all images
 
     return 0;
