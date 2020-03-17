@@ -13,7 +13,7 @@ using namespace std;
 void detectObjects2()
 {
     // load image from file
-    cv::Mat img = cv::imread("../images/s_thrun.jpg");
+    cv::Mat img = cv::imread("../images/0000000000.png");
 
     // load class names from file
     string yoloBasePath = "../dat/yolo/";
@@ -31,10 +31,12 @@ void detectObjects2()
     net.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
     net.setPreferableTarget(cv::dnn::DNN_TARGET_CPU);
 
+    double t = (double)cv::getTickCount();
+
     // generate 4D blob from input image
     cv::Mat blob;
     double scalefactor = 1/255.0;
-    cv::Size size = cv::Size(416, 416);
+    cv::Size size = cv::Size(320, 320);
     cv::Scalar mean = cv::Scalar(0,0,0);
     bool swapRB = false;
     bool crop = false;
@@ -57,7 +59,7 @@ void detectObjects2()
     net.forward(netOutput, names);
 
     // Scan through all bounding boxes and keep only the ones with high confidence
-    float confThreshold = 0.20;
+    float confThreshold = 0.40;
     vector<int> classIds;
     vector<float> confidences;
     vector<cv::Rect> boxes;
@@ -104,8 +106,10 @@ void detectObjects2()
         
         bBoxes.push_back(bBox);
     }
-    
-    
+
+    t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+    cout << "YOLO: " << 1000 * t / 1.0 << " ms" << endl;
+
     // show results
     cv::Mat visImg = img.clone();
     for (auto it = bBoxes.begin(); it != bBoxes.end(); ++it)
