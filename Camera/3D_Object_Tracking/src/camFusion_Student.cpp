@@ -188,11 +188,12 @@ void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
     double stdCurr = sqrt(varCurr);
 
     // find closest distance to Lidar points within ego lane
+    double stdNum = 0.5;
     double minXPrev = 1e9, minXCurr = 1e9;
     for (auto it = lidarPointsPrev.begin(); it != lidarPointsPrev.end(); ++it)
     {
-        // Remove lidar points outside lane or two standard deviations closer to the host than the mean lidar point
-        if ((abs(it->y) <= (laneWidth / 2.0)) && (it->x > (avgXPrev - (2 * stdPrev))))
+        // Remove lidar points outside lane or stdNum standard deviations closer to the host than the mean lidar point
+        if ((abs(it->y) <= (laneWidth / 2.0)) && (it->x > (avgXPrev - (stdNum * stdPrev))))
         {
             minXPrev = minXPrev > it->x ? it->x : minXPrev;
         }
@@ -200,8 +201,8 @@ void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
 
     for (auto it = lidarPointsCurr.begin(); it != lidarPointsCurr.end(); ++it)
     {
-        // Remove lidar points outside lane or two standard deviations closer to the host than the mean lidar point
-        if ((abs(it->y) <= (laneWidth / 2.0)) && (it->x > (avgXCurr - (2 * stdCurr))))
+        // Remove lidar points outside lane or stdNum standard deviations closer to the host than the mean lidar point
+        if ((abs(it->y) <= (laneWidth / 2.0)) && (it->x > (avgXCurr - (stdNum * stdCurr))))
         {
             minXCurr = minXCurr > it->x ? it->x : minXCurr;
         }
