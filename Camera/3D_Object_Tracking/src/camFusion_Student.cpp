@@ -154,5 +154,56 @@ void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
 
 void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bbBestMatches, DataFrame &prevFrame, DataFrame &currFrame)
 {
-    // ...
+    // Previous = Source = Query
+    // Current = Reference = Train
+
+    vector<int> matchedIDs;
+
+    // Loop over all bounding boxes in the current frame
+    for (std::vector<BoundingBox>::iterator current_it = currFrame.boundingBoxes.begin(); current_it != currFrame.boundingBoxes.end(); ++current_it)
+    {
+        int bbCurrentID = (*current_it).boxID;
+        map<int, int> bbMatches; // <prev boxID, cnt>
+
+        // Loop over all matches
+        for (std::vector<cv::DMatch>::iterator matches_it = matches.begin(); matches_it != matches.end(); ++matches_it)
+        {
+            // Check whether the keypoint match is contained in the bounding box
+            if ((*current_it).roi.contains(currFrame.keypoints[(*matches_it).trainIdx].pt))
+            {
+                // Loop over all bounding boxes in the previous frame
+                for (std::vector<BoundingBox>::iterator previous_it = prevFrame.boundingBoxes.begin(); previous_it != prevFrame.boundingBoxes.end(); ++previous_it)
+                {
+                    // Check whether the keypoint match is contained in the bounding box
+                    if ((*previous_it).roi.contains(prevFrame.keypoints[(*matches_it).queryIdx].pt))
+                    {
+                        if (0 == bbMatches.count((*previous_it).boxID))
+                        {
+                            bbMatches.insert(pair<int, int>((*previous_it).boxID, 0));
+                        }
+
+                        bbMatches.at((*previous_it).boxID)++;
+                    }
+                }
+            }
+        }
+
+        int bbPreviousID;
+        int maxMatches = 0;
+
+        for (map<int, int>::iterator map_it = bbMatches.begin(); map_it != bbMatches.end(); ++map_it)
+        {
+            if ((map_it->second > maxMatches) && (find(matchedIDs.begin(), matchedIDs.end(), map_it->first) == matchedIDs.end()))
+            {
+                maxMatches = map_it->second;
+                bbPreviousID = map_it->first;
+            }
+        }
+
+        if (maxMatches != 0)
+        {
+            matchedIDs.push_back(bbPreviousID);
+            bbBestMatches.insert(pair<int, int>(bbPreviousID, bbCurrentID));
+        }
+    }
 }
