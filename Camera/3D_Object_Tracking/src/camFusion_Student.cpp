@@ -137,7 +137,7 @@ void clusterKptMatchesWithROI(BoundingBox &boundingBox, std::vector<cv::KeyPoint
     // Current = Reference = Train
 
     std::vector<double> euclideanDists;
-    double maxDistanceFromMedian = 1.0;
+    double maxDistanceFromMedian = 2.0;
 
     for (auto it = kptMatches.begin(); it != kptMatches.end(); ++it)
     {
