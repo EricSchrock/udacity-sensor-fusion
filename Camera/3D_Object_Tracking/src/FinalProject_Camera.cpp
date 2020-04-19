@@ -134,9 +134,9 @@ int main(int argc, const char *argv[])
 
         // Visualize 3D objects
         bVis = false;
-        if(bVis)
+        if (bVis)
         {
-            show3DObjects((dataBuffer.end()-1)->boundingBoxes, cv::Size(4.0, 20.0), cv::Size(750, 750), true);
+            show3DObjects((dataBuffer.end()-1)->boundingBoxes, cv::Size(4.0, 20.0), cv::Size(500, 500), true);
         }
         bVis = false;
 
@@ -246,7 +246,7 @@ int main(int argc, const char *argv[])
                 }
 
                 // compute TTC for current match
-                if( currBB->lidarPoints.size()>0 && prevBB->lidarPoints.size()>0 ) // only compute TTC if we have Lidar points
+                if (currBB->lidarPoints.size() > 0 && prevBB->lidarPoints.size() > 0) // only compute TTC if we have Lidar points
                 {
                     double ttcLidar, ttcCamera;
 

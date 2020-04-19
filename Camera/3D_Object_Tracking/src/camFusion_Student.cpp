@@ -56,7 +56,6 @@ void clusterLidarWithROI(std::vector<BoundingBox> &boundingBoxes, std::vector<Li
             // add Lidar point to bounding box
             enclosingBoxes[0]->lidarPoints.push_back(*it1);
         }
-
     } // eof loop over all Lidar points
 }
 
@@ -66,15 +65,16 @@ void show3DObjects(std::vector<BoundingBox> &boundingBoxes, cv::Size worldSize, 
     // create topview image
     cv::Mat topviewImg(imageSize, CV_8UC3, cv::Scalar(255, 255, 255));
 
-    for(auto it1=boundingBoxes.begin(); it1!=boundingBoxes.end(); ++it1)
+    for (auto it1 = boundingBoxes.begin(); it1 != boundingBoxes.end(); ++it1)
     {
         // create randomized color for current 3D object
         cv::RNG rng(it1->boxID);
-        cv::Scalar currColor = cv::Scalar(rng.uniform(0,150), rng.uniform(0, 150), rng.uniform(0, 150));
+        cv::Scalar currColor = cv::Scalar(rng.uniform(0, 150), rng.uniform(0, 150), rng.uniform(0, 150));
 
         // plot Lidar points into top view image
         int top=1e8, left=1e8, bottom=0.0, right=0.0; 
         float xwmin=1e8, ywmin=1e8, ywmax=-1e8;
+
         for (auto it2 = it1->lidarPoints.begin(); it2 != it1->lidarPoints.end(); ++it2)
         {
             // world coordinates
@@ -99,19 +99,20 @@ void show3DObjects(std::vector<BoundingBox> &boundingBoxes, cv::Size worldSize, 
         }
 
         // draw enclosing rectangle
-        cv::rectangle(topviewImg, cv::Point(left, top), cv::Point(right, bottom),cv::Scalar(0,0,0), 2);
+        cv::rectangle(topviewImg, cv::Point(left, top), cv::Point(right, bottom), cv::Scalar(0,0,0), 2);
 
         // augment object with some key data
         char str1[200], str2[200];
         sprintf(str1, "id=%d, #pts=%d", it1->boxID, (int)it1->lidarPoints.size());
-        putText(topviewImg, str1, cv::Point2f(left-250, bottom+50), cv::FONT_ITALIC, 2, currColor);
+        putText(topviewImg, str1, cv::Point2f(left-150, bottom+50), cv::FONT_ITALIC, 1, currColor);
         sprintf(str2, "xmin=%2.2f m, yw=%2.2f m", xwmin, ywmax-ywmin);
-        putText(topviewImg, str2, cv::Point2f(left-250, bottom+125), cv::FONT_ITALIC, 2, currColor);  
+        putText(topviewImg, str2, cv::Point2f(left-150, bottom+125), cv::FONT_ITALIC, 1, currColor);
     }
 
     // plot distance markers
     float lineSpacing = 2.0; // gap between distance markers
     int nMarkers = floor(worldSize.height / lineSpacing);
+
     for (size_t i = 0; i < nMarkers; ++i)
     {
         int y = (-(i * lineSpacing) * imageSize.height / worldSize.height) + imageSize.height;
@@ -123,7 +124,7 @@ void show3DObjects(std::vector<BoundingBox> &boundingBoxes, cv::Size worldSize, 
     cv::namedWindow(windowName, 1);
     cv::imshow(windowName, topviewImg);
 
-    if(bWait)
+    if (bWait)
     {
         cv::waitKey(0); // wait for key to be pressed
     }
@@ -219,70 +220,55 @@ void computeTTCCamera(std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPo
 
 
 void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
-                     std::vector<LidarPoint> &lidarPointsCurr, double frameRate, double &TTC)
+                     std::vector<LidarPoint> &lidarPointsCurr,
+                     double frameRate,
+                     double &TTC)
 {
     // auxiliary variables
     double dT = 1.0 / frameRate; // time between two measurements in seconds
     double laneWidth = 4.0;      // assumed width of the ego lane
 
-    // calculate the mean x position (previous and current)
-    double avgXPrev = 0.0, avgXCurr = 0.0;
+    // calculate the median previous x position
+    vector<double> xPrev;
 
     for (auto it = lidarPointsPrev.begin(); it != lidarPointsPrev.end(); ++it)
     {
-        avgXPrev += it->x;
-    }
-
-    for (auto it = lidarPointsCurr.begin(); it != lidarPointsCurr.end(); ++it)
-    {
-        avgXCurr += it->x;
-    }
-
-    avgXPrev /= lidarPointsPrev.size();
-    avgXCurr /= lidarPointsCurr.size();
-
-    // calculate the standard deviation (previous and current)
-    double varPrev = 0.0, varCurr = 0.0;
-
-    for (auto it = lidarPointsPrev.begin(); it != lidarPointsPrev.end(); ++it)
-    {
-        varPrev += (it->x - avgXPrev) * (it->x - avgXPrev);
-    }
-
-    for (auto it = lidarPointsCurr.begin(); it != lidarPointsCurr.end(); ++it)
-    {
-        varCurr += (it->x - avgXCurr) * (it->x - avgXCurr);
-    }
-
-    varPrev /= lidarPointsPrev.size();
-    varCurr /= lidarPointsCurr.size();
-
-    double stdPrev = sqrt(varPrev);
-    double stdCurr = sqrt(varCurr);
-
-    // find closest distance to Lidar points within ego lane
-    double stdNum = 0.5;
-    double minXPrev = 1e9, minXCurr = 1e9;
-    for (auto it = lidarPointsPrev.begin(); it != lidarPointsPrev.end(); ++it)
-    {
-        // Remove lidar points outside lane or stdNum standard deviations closer to the host than the mean lidar point
-        if ((abs(it->y) <= (laneWidth / 2.0)) && (it->x > (avgXPrev - (stdNum * stdPrev))))
+        // remove lidar points outside the lane
+        if (abs(it->y) <= (laneWidth / 2.0))
         {
-            minXPrev = minXPrev > it->x ? it->x : minXPrev;
+            xPrev.push_back(it->x);
         }
     }
 
+    std::sort(xPrev.begin(), xPrev.end());
+    long medIndex = floor(xPrev.size() / 2.0);
+    double medXPrev = xPrev.size() % 2 == 0 ? (xPrev[medIndex - 1] + xPrev[medIndex]) / 2.0 : xPrev[medIndex];
+
+    // calculate the median current x position
+    vector<double> xCurr;
+
     for (auto it = lidarPointsCurr.begin(); it != lidarPointsCurr.end(); ++it)
     {
-        // Remove lidar points outside lane or stdNum standard deviations closer to the host than the mean lidar point
-        if ((abs(it->y) <= (laneWidth / 2.0)) && (it->x > (avgXCurr - (stdNum * stdCurr))))
+        // remove lidar points outside the lane
+        if (abs(it->y) <= (laneWidth / 2.0))
         {
-            minXCurr = minXCurr > it->x ? it->x : minXCurr;
+            xCurr.push_back(it->x);
         }
     }
+
+    std::sort(xCurr.begin(), xCurr.end());
+    medIndex = floor(xCurr.size() / 2.0);
+    double medXCurr = xCurr.size() % 2 == 0 ? (xCurr[medIndex - 1] + xCurr[medIndex]) / 2.0 : xCurr[medIndex];
 
     // compute TTC from both measurements
-    TTC = minXCurr * dT / (minXPrev - minXCurr);
+    if (abs(medXPrev - medXCurr) > std::numeric_limits<double>::epsilon())
+    {
+        TTC = medXCurr * dT / (medXPrev - medXCurr);
+    }
+    else
+    {
+        TTC = NAN;
+    }
 }
 
 
