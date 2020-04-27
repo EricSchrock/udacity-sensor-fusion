@@ -56,24 +56,19 @@ td = zeros(1, length(t));
 %% Signal Generation and Moving Target Simulation
 % Running the radar scenario over the time. 
 
-for i = 1 : length(t)
+r_t(1) = R;
+
+for i = 2 : length(t)
     % For each time stamp update the Range of the Target for constant velocity.
-    if i > 1
-        R = R + (v * (t(i) - t(i-1)));
-    end
-
-    td(i) = (2 * R) / c;
-
-    % For each time sample we need update the transmitted and
-    % received signal.
-    Tx(i) = cos(2 * pi * ((fc * t(i)) + ((slope * t(i) ^ 2) / 2)));
-    Rx(i) = cos(2 * pi * ((fc * (t(i) - td(i))) + ((slope * (t(i) - td(i)) ^ 2) / 2)));
-
-    % Now by mixing the Transmit and Receive generate the beat signal
-    % This is done by element wise matrix multiplication of Transmit and
-    % Receiver Signal
-    Mix(i) = Tx(i) * Rx(i);
+    r_t(i) = r_t(i-1) + (v * (t(i) - t(i-1)));
 end
+
+td = (2 * r_t) / c;
+
+Tx = cos(2 * pi * ((fc * t) + ((slope * t .^ 2) / 2)));
+Rx = cos(2 * pi * ((fc * (t - td)) + ((slope * (t - td) .^ 2) / 2)));
+Mix = Tx .* Rx;
+
 
 %% Range Measurement
 
