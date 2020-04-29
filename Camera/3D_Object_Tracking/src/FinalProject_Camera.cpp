@@ -129,7 +129,7 @@ int main(int argc, const char *argv[])
         /* CLUSTER LIDAR POINT CLOUD */
 
         // associate Lidar points with camera-based ROI
-        float shrinkFactor = 0.10; // shrinks each bounding box by the given percentage to avoid 3D object merging at the edges of an ROI
+        float shrinkFactor = 0.30; // shrinks each bounding box by the given percentage to avoid 3D object merging at the edges of an ROI
         clusterLidarWithROI((dataBuffer.end()-1)->boundingBoxes, (dataBuffer.end() - 1)->lidarPoints, shrinkFactor, P_rect_00, R_rect_00, RT);
 
         // Visualize 3D objects
