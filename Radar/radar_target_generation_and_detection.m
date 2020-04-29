@@ -147,20 +147,13 @@ noise_level = zeros(1, 1);
 % Further add the offset to it to determine the threshold. Next, compare the
 % signal under CUT with this threshold. If the CUT level > threshold assign
 % it a value of 1, else equate it to 0.
+num_training_cells = ((2*(Td+Gd)+1) * (2*(Tr+Gr)+1)) - (((2*Gd)+1) * ((2*Gr)+1));
+
 for i = Tr+Gr+1 : (Nr/2)-(Gr+Tr)
     for j = Td+Gd+1 : Nd-(Gd+Td)
         CUT = RDM(i, j);
-        noise_level = 0;
-
-        for p = i-(Tr+Gr) : i+Tr+Gr
-            for q = j-(Td+Gd) : j+Td+Gd
-                if abs(i-p) > Gr || abs(j-q) > Gd
-                    noise_level = noise_level + db2pow(RDM(p, q));
-                end
-            end
-        end
-
-        threshold = pow2db(noise_level/(2*(Td+Gd+1)*2*(Tr+Gr+1)-(Gr*Gd)-1));
+        noise_level = sum(sum(db2pow(RDM(i-(Tr+Gr):i+Tr+Gr, j-(Td+Gd):j+Td+Gd)))) - sum(sum(db2pow(RDM(i-Gr:i+Gr, j-Gd:j+Gd))));
+        threshold = pow2db(noise_level / num_training_cells);
 
         if CUT < (threshold + offset)
             RDM(i, j) = 0;
@@ -174,13 +167,7 @@ end
 % than the Range Doppler Map as the CUT cannot be located at the edges of
 % matrix. Hence, few cells will not be thresholded. To keep the map size same
 % set those values to 0.
-for i = 1 : Nr/2
-   for j = 1 : Nd
-       if (i < (Tr+Gr+1)) || (i > (Nr/2)-(Gr+Tr)) || (j < (Td+Gd+1)) || (j > (Nd-(Gd+Td)))
-           RDM(i, j) = 0;
-       end
-   end
-end
+RDM(RDM~=0 & RDM~=1) = 0;
 
 % display the CFAR output using the Surf function like we did for Range
 % Doppler Response output.
