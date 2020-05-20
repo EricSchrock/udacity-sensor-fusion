@@ -19,15 +19,15 @@ double Tools::noise(double stddev, long long seedNum)
 lmarker Tools::lidarSense(Car& car, pcl::visualization::PCLVisualizer::Ptr& viewer, long long timestamp, bool visualize)
 {
 	MeasurementPackage meas_package;
-	meas_package.sensor_type_ = MeasurementPackage::LASER;
-  	meas_package.raw_measurements_ = VectorXd(2);
+	meas_package.sensor_type = MeasurementPackage::LASER;
+  	meas_package.raw_measurements = VectorXd(2);
 
 	lmarker marker = lmarker(car.position.x + noise(0.15,timestamp), car.position.y + noise(0.15,timestamp+1));
 	if(visualize)
 		viewer->addSphere(pcl::PointXYZ(marker.x,marker.y,3.0),0.5, 1, 0, 0,car.name+"_lmarker");
 
-    meas_package.raw_measurements_ << marker.x, marker.y;
-    meas_package.timestamp_ = timestamp;
+    meas_package.raw_measurements << marker.x, marker.y;
+    meas_package.timestamp = timestamp;
 
     car.ukf.ProcessMeasurement(meas_package);
 
@@ -49,10 +49,10 @@ rmarker Tools::radarSense(Car& car, Car ego, pcl::visualization::PCLVisualizer::
 	}
 	
 	MeasurementPackage meas_package;
-	meas_package.sensor_type_ = MeasurementPackage::RADAR;
-    meas_package.raw_measurements_ = VectorXd(3);
-    meas_package.raw_measurements_ << marker.rho, marker.phi, marker.rho_dot;
-    meas_package.timestamp_ = timestamp;
+	meas_package.sensor_type = MeasurementPackage::RADAR;
+    meas_package.raw_measurements = VectorXd(3);
+    meas_package.raw_measurements << marker.rho, marker.phi, marker.rho_dot;
+    meas_package.timestamp = timestamp;
 
     car.ukf.ProcessMeasurement(meas_package);
 
@@ -65,8 +65,8 @@ rmarker Tools::radarSense(Car& car, Car ego, pcl::visualization::PCLVisualizer::
 void Tools::ukfResults(Car car, pcl::visualization::PCLVisualizer::Ptr& viewer, double time, int steps)
 {
 	UKF ukf = car.ukf;
-	viewer->addSphere(pcl::PointXYZ(ukf.x_[0],ukf.x_[1],3.5), 0.5, 0, 1, 0,car.name+"_ukf");
-	viewer->addArrow(pcl::PointXYZ(ukf.x_[0], ukf.x_[1],3.5), pcl::PointXYZ(ukf.x_[0]+ukf.x_[2]*cos(ukf.x_[3]),ukf.x_[1]+ukf.x_[2]*sin(ukf.x_[3]),3.5), 0, 1, 0, car.name+"_ukf_vel");
+	viewer->addSphere(pcl::PointXYZ(ukf.x[0],ukf.x[1],3.5), 0.5, 0, 1, 0,car.name+"_ukf");
+	viewer->addArrow(pcl::PointXYZ(ukf.x[0], ukf.x[1],3.5), pcl::PointXYZ(ukf.x[0]+ukf.x[2]*cos(ukf.x[3]),ukf.x[1]+ukf.x[2]*sin(ukf.x[3]),3.5), 0, 1, 0, car.name+"_ukf_vel");
 	if(time > 0)
 	{
 		double dt = time/steps;
@@ -74,9 +74,9 @@ void Tools::ukfResults(Car car, pcl::visualization::PCLVisualizer::Ptr& viewer, 
 		while(ct <= time)
 		{
 			ukf.Prediction(dt);
-			viewer->addSphere(pcl::PointXYZ(ukf.x_[0],ukf.x_[1],3.5), 0.5, 0, 1, 0,car.name+"_ukf"+std::to_string(ct));
+			viewer->addSphere(pcl::PointXYZ(ukf.x[0],ukf.x[1],3.5), 0.5, 0, 1, 0,car.name+"_ukf"+std::to_string(ct));
 			viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_OPACITY, 1.0-0.8*(ct/time), car.name+"_ukf"+std::to_string(ct));
-			//viewer->addArrow(pcl::PointXYZ(ukf.x_[0], ukf.x_[1],3.5), pcl::PointXYZ(ukf.x_[0]+ukf.x_[2]*cos(ukf.x_[3]),ukf.x_[1]+ukf.x_[2]*sin(ukf.x_[3]),3.5), 0, 1, 0, car.name+"_ukf_vel"+std::to_string(ct));
+			//viewer->addArrow(pcl::PointXYZ(ukf.x[0], ukf.x[1],3.5), pcl::PointXYZ(ukf.x[0]+ukf.x[2]*cos(ukf.x[3]),ukf.x[1]+ukf.x[2]*sin(ukf.x[3]),3.5), 0, 1, 0, car.name+"_ukf_vel"+std::to_string(ct));
 			//viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_OPACITY, 1.0-0.8*(ct/time), car.name+"_ukf_vel"+std::to_string(ct));
 			ct += dt;
 		}
