@@ -28,17 +28,10 @@ UKF::UKF()
     std_radrd = 0.3;   // standard deviation radius change in m/s
 
     /* State */
-    n_x = 5;                // state dimension (CTRV)
-    x = VectorXd(n_x);      // state vector
-    P = MatrixXd(n_x, n_x); // state covariance matrix
-
-    x.fill(0.0);
-    P.fill(0.0);
-    P(0, 0) = 1;
-    P(1, 1) = 1;
-    P(2, 2) = 1;
-    P(3, 3) = 1;
-    P(4, 4) = 1;
+    n_x = 5;                          // state dimension (CTRV)
+    x = VectorXd(n_x);                // state vector
+    P = MatrixXd::Identity(n_x, n_x); // state covariance matrix
+    P *= 0.25;
 
     /* Sigma points */
     n_aug = 7;
@@ -56,7 +49,7 @@ UKF::UKF()
 
     /* Process noise */
     std_a = 3;            // standard deviation longitudinal acceleration in m/s^2
-    std_yawdd = 2 * M_PI; // standard deviation yaw acceleration in rad/s^2
+    std_yawdd = M_PI;     // standard deviation yaw acceleration in rad/s^2
 }
 
 UKF::~UKF() {}
@@ -71,16 +64,17 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package)
         Prediction((double)dt / 1000000.0);
     }
 
-    if (use_laser && meas_package.sensor_type == meas_package.LASER)
+    if (meas_package.sensor_type == meas_package.LASER)
     {
         if (!is_initialized)
         {
+            x.fill(0.0);
             x(0) = meas_package.raw_measurements(0);
             x(1) = meas_package.raw_measurements(1);
 
             is_initialized = true;
         }
-        else
+        else if (use_laser)
         {
             UpdateLidar(meas_package);
         }
@@ -93,8 +87,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package)
 
 void UKF::Prediction(double dt)
 {
-    std::cout << "Prediction " << dt << std::endl;
-
     /* Generate sigma points */
     VectorXd x_aug = VectorXd(n_aug);
     MatrixXd P_aug = MatrixXd(n_aug, n_aug);
@@ -174,13 +166,32 @@ void UKF::Prediction(double dt)
 
 void UKF::UpdateLidar(MeasurementPackage meas_package)
 {
-    std::cout << "Lidar" << std::endl;
-
     /* Predict measurement */
+    int n_z = 2;                     // measurement dimension
+    MatrixXd H = MatrixXd(n_z, n_x); // measurement matrix
 
+    H.fill(0.0);
+    H(0, 0) = H(1, 1) = 1;
+
+    VectorXd z_pred = H * x;
 
     /* Update state */
+    VectorXd z = VectorXd(n_z); // measurement
+    z(0) = meas_package.raw_measurements(0);
+    z(1) = meas_package.raw_measurements(1);
 
+    MatrixXd R = MatrixXd(n_z, n_z); // measurement covariance
+    R.fill(0.0);
+    R(0, 0) = std_laspx * std_laspx;
+    R(1, 1) = std_laspy * std_laspy;
+
+    VectorXd y = z - z_pred;
+    MatrixXd S = H * P * H.transpose() + R;
+    MatrixXd K = (P * H.transpose()) * S.inverse();
+    MatrixXd I = MatrixXd::Identity(n_x, n_x);
+
+    x = x + (K * y);
+    P = (I - K * H) * P;
 
     /* Calculate lidar NIS */
 
@@ -188,8 +199,6 @@ void UKF::UpdateLidar(MeasurementPackage meas_package)
 
 void UKF::UpdateRadar(MeasurementPackage meas_package)
 {
-    std::cout << "Radar" << std::endl;
-
     /* Predict measurement */
     int n_z = 3;                          // measurement dimension
     MatrixXd Zsig = MatrixXd(n_z, n_sig); // measurement space sigma points
